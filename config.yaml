@@ -1,0 +1,85 @@
+# ── Protein Family Survey Pipeline ─────────────────────────────────────────────
+# Edit the sections below to survey any protein family.
+# See config_example_acyltransferase.yaml for a complete worked example.
+
+# ── Paths ──────────────────────────────────────────────────────────────────────
+paths:
+  data_dir:    "data"
+  results_dir: "results"
+  # Colab users: "/content/drive/MyDrive/my_survey"
+
+# ── Reference probes ───────────────────────────────────────────────────────────
+# Known members of your protein family. Used to:
+#   - anchor and label Leiden communities
+#   - query the KNN index
+#   - provide comparison structures (if UniProt accessions given)
+# Minimum: 2 sequences. Recommended: 5–20 covering known subfamilies.
+# colour: any hex code — used in t-SNE and tree plots.
+reference_probes:
+  - { id: "PROTEIN_A_HUMAN", acc: "P00000", label: "Protein A", colour: "#E05C5C" }
+  - { id: "PROTEIN_B_HUMAN", acc: "P00001", label: "Protein B", colour: "#1E88E5" }
+  # Add more rows as needed
+
+# ── AlphaFold reference structures (optional) ──────────────────────────────────
+# UniProt accessions for human/model-organism orthologs to download from
+# AlphaFold DB for structural comparison. Leave empty ({}) to skip.
+alphafold_targets: {}
+  # PROTEIN_A_HUMAN: "P00000"
+  # PROTEIN_B_HUMAN: "P00001"
+
+# ── Protein length filter ──────────────────────────────────────────────────────
+filter:
+  min_length: 200
+  max_length: 800   # increase if your protein family is larger
+
+# ── HMMER domain search ────────────────────────────────────────────────────────
+# Pfam accession(s) for your domain, or a path to a custom .hmm file.
+# The pipeline downloads Pfam profiles automatically if you supply an accession.
+hmmer:
+  evalue:    1.0e-5
+  cpu:       4
+  profiles:  [ "PF00000" ]   # replace with your Pfam ID, e.g. "PF01553"
+  # custom_hmm: "data/hmm_profiles/my_domain.hmm"   # use this instead for custom HMM
+
+# ── ESM2 embedding ─────────────────────────────────────────────────────────────
+embedding:
+  model:      "esm2_t33_650M_UR50D"   # 650M param; use esm2_t6_8M_UR50D for speed
+  layer:      33
+  dim:        1280
+  batch_size: 32
+  device:     "cuda"
+
+# ── Clustering ─────────────────────────────────────────────────────────────────
+clustering:
+  k_neighbors:  25      # KNN graph degree; increase for larger datasets
+  resolution:   2.0     # Leiden resolution; higher = more, smaller communities
+  pca_dims:     50
+  tsne_perp:    100     # rule of thumb: sqrt(N); reduce for < 500 sequences
+
+# Sub-clustering: re-cluster the members of one top-level community
+# Leave empty ({}) to skip. Add one entry per cluster you want to sub-cluster.
+subclustering: {}
+  # my_cluster:
+  #   resolution: 1.0
+  #   tsne_perp:  30
+
+# ── Phylogenetics ──────────────────────────────────────────────────────────────
+tree:
+  mafft_flags:      "--auto --thread 8 --quiet"
+  fasttree_model:   "lg"      # lg or wag
+  iqtree_model:     "LG+G4"
+  iqtree_bootstrap: 1000
+  iqtree_threads:   8
+
+# ── Structure prediction ───────────────────────────────────────────────────────
+structure:
+  esmfold_model: "facebook/esmfold_v1"
+
+# ── Catalytic / key residue motifs (optional) ──────────────────────────────────
+# Regex patterns for residues to highlight as sticks in structure views.
+# Leave empty ({}) if you don't have known functional sites yet.
+catalytic_motifs: {}
+  # MyMotif:
+  #   pattern: "H.{2}D"
+  #   colour:  "#FF6B00"
+  #   role:    "catalytic dyad"

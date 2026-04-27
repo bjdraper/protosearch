@@ -1,0 +1,34 @@
+# Core science
+numpy
+pandas
+scipy
+scikit-learn
+biopython
+
+# Protein embedding
+fair-esm
+torch  # GPU install handled separately in Colab
+
+# HMMER/FAISS (install via apt + pip in Colab)
+faiss-cpu  # or faiss-gpu on GPU runtime
+
+# Clustering
+leidenalg
+python-igraph
+openTSNE
+
+# Phylogenetics
+ete3
+
+# Structure prediction
+transformers
+accelerate
+
+# Visualisation
+matplotlib
+seaborn
+logomaker
+py3Dmol           # Colab structure viewer (replaces PyMOL)
+
+# Config
+pyyaml
