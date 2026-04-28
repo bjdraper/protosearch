@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protosearch — Notebook Guide</title>
+<style>
+  :root {
+    --bg:        #f8f9fa;
+    --card:      #ffffff;
+    --border:    #e0e4eb;
+    --text:      #1a1d23;
+    --muted:     #6b7280;
+    --accent:    #2563eb;
+    --accent-lt: #eff6ff;
+    --green:     #16a34a;
+    --green-lt:  #f0fdf4;
+    --amber:     #d97706;
+    --amber-lt:  #fffbeb;
+    --red:       #dc2626;
+    --red-lt:    #fef2f2;
+    --purple:    #7c3aed;
+    --purple-lt: #f5f3ff;
+    --teal:      #0d9488;
+    --teal-lt:   #f0fdfa;
+    --radius:    10px;
+    --shadow:    0 1px 4px rgba(0,0,0,.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 15px;
+  }
+
+  /* ── Layout ── */
+  .page { max-width: 960px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* ── Header ── */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: #fff;
+    padding: 48px 20px 40px;
+    margin-bottom: 40px;
+  }
+  .hero-inner { max-width: 960px; margin: 0 auto; }
+  .hero h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.5px; margin-bottom: 8px; }
+  .hero p  { font-size: 1.05rem; opacity: .88; max-width: 640px; }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* ── Nav pills ── */
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 36px;
+  }
+  .toc a {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: .82rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .toc a:hover { background: var(--accent-lt); border-color: var(--accent); }
+
+  /* ── Section headers ── */
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 48px 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+  }
+  h2 .sec-num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: .8rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 28px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  h3 { font-size: 1rem; font-weight: 700; margin: 24px 0 8px; color: var(--text); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+
+  /* ── Pipeline step cards ── */
+  .step {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: 0 16px;
+    align-items: start;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 10px;
+  }
+  .step-num {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .78rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .step-body h3 { margin: 0 0 4px; font-size: .95rem; }
+  .step-body p  { margin: 0; color: var(--muted); font-size: .88rem; }
+  .step-body .detail { margin-top: 8px; font-size: .85rem; color: var(--text); }
+  .step-body code { background: #f1f5f9; border-radius: 4px; padding: 1px 5px; font-size: .83rem; font-family: "SF Mono", monospace; }
+
+  .step.user-step  { border-left: 4px solid var(--accent); }
+  .step.auto-step  { border-left: 4px solid var(--green); }
+  .step.heavy-step { border-left: 4px solid var(--red); }
+  .step.mod-step   { border-left: 4px solid var(--amber); }
+  .step.optional   { border-left: 4px solid var(--purple); opacity: .92; }
+
+  /* ── Resource badge ── */
+  .res {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .pill {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 2px 9px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill-green  { background: var(--green-lt);  color: var(--green); }
+  .pill-amber  { background: var(--amber-lt);  color: var(--amber); }
+  .pill-red    { background: var(--red-lt);    color: var(--red);   }
+  .pill-purple { background: var(--purple-lt); color: var(--purple);}
+  .pill-blue   { background: var(--accent-lt); color: var(--accent);}
+  .pill-teal   { background: var(--teal-lt);   color: var(--teal);  }
+  .pill-grey   { background: #f1f5f9;          color: var(--muted); }
+
+  /* ── Resource table ── */
+  .res-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .res-table th {
+    background: #f1f5f9;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .res-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .res-table tr:last-child td { border-bottom: none; }
+  .res-table tr:hover td { background: #fafbfc; }
+
+  /* ── Meter bars ── */
+  .meter { width: 90px; height: 8px; background: #e5e7eb; border-radius: 4px; display: inline-block; vertical-align: middle; }
+  .meter-fill { height: 100%; border-radius: 4px; }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: .9rem;
+    display: flex;
+    gap: 12px;
+  }
+  .callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 3px; font-size: .92rem; }
+  .callout.tip   { background: var(--teal-lt);   border: 1px solid #99f6e4; }
+  .callout.warn  { background: var(--amber-lt);  border: 1px solid #fcd34d; }
+  .callout.info  { background: var(--accent-lt); border: 1px solid #bfdbfe; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: .83rem;
+    font-family: "SF Mono", "Fira Code", monospace;
+    overflow-x: auto;
+    margin: 12px 0;
+    line-height: 1.55;
+  }
+  pre .cm { color: #94a3b8; }
+  pre .kw { color: #93c5fd; }
+  pre .st { color: #a5f3fc; }
+
+  /* ── Pipeline diagram ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    margin: 20px 0;
+  }
+  .pipe-item {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+  }
+  .pipe-connector {
+    width: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .pipe-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--accent);
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 14px;
+  }
+  .pipe-line {
+    width: 2px;
+    flex: 1;
+    background: var(--border);
+    margin: 0 auto;
+  }
+  .pipe-item:last-child .pipe-line { display: none; }
+  .pipe-content {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 16px;
+    margin: 6px 0 6px 8px;
+    font-size: .88rem;
+  }
+  .pipe-content strong { color: var(--text); font-size: .9rem; }
+  .pipe-content span   { color: var(--muted); }
+  .pipe-content .file  { font-family: monospace; font-size: .82rem; color: var(--teal); }
+
+  /* ── User action highlight ── */
+  .user-action {
+    background: var(--accent-lt);
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: .82rem;
+    text-align: center;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .step { grid-template-columns: 40px 1fr; }
+    .res  { display: none; }
+    .hero h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="badge">User Guide</div>
+    <h1>Protosearch Notebook Guide</h1>
+    <p>A step-by-step walkthrough of the <code style="background:rgba(255,255,255,.2);padding:2px 6px;border-radius:4px;font-size:.9em">agpat_crustacea.ipynb</code> Google Colab notebook — what each cell does, how to configure it for your data, and where the heavy computation happens.</p>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ── TOC ── -->
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#before-you-start">Before you start</a>
+  <a href="#data-prep">Data preparation</a>
+  <a href="#pipeline-steps">Pipeline steps</a>
+  <a href="#resource-guide">Resource guide</a>
+  <a href="#customising">Customising for your family</a>
+  <a href="#outputs">Outputs</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ OVERVIEW -->
+<h2 id="overview"><span class="sec-num">1</span> What does this notebook do?</h2>
+
+<div class="card">
+  <p>Protosearch takes a set of <strong>known reference proteins</strong> and a <strong>proteome database</strong>, then discovers and classifies related proteins using deep-learning embeddings rather than sequence identity alone. It is protein-family agnostic — the crustacean AGPAT survey is the worked example, but any family with a Pfam domain can be substituted.</p>
+  <p style="margin-top:12px">The notebook walks through six stages: <strong>setup → input → HMMER filter → ESM2 embedding → FAISS clustering → phylogenetics &amp; ancestral reconstruction.</strong></p>
+</div>
+
+<!-- Pipeline diagram -->
+<div class="pipeline">
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#2563eb;box-shadow:0 0 0 2px #2563eb"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>Reference probes</strong> — UniProt accessions you supply (e.g. AGPAT1–5, PlsC) <span class="file">→ data/query_sequences/reference_probes.faa</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#0d9488;box-shadow:0 0 0 2px #0d9488"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>Your proteome FASTA(s)</strong> — per-species .faa files from Drive (331 files for the crustacean run) <span class="file">→ data/proteins_raw/combined_input.faa</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#16a34a;box-shadow:0 0 0 2px #16a34a"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>Length filter + deduplication</strong> — keeps proteins 200–500 AA <span class="file">→ data/proteins_filtered.faa</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#16a34a;box-shadow:0 0 0 2px #16a34a"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>HMMER domain filter</strong> — keeps only sequences containing the target Pfam domain (e.g. PF01553) <span class="file">→ data/hmmer_hits/</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#dc2626;box-shadow:0 0 0 2px #dc2626"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>ESM2 embedding</strong> — each protein → 1,280-dimensional vector using Meta's protein language model <span class="file">→ data/embeddings/hits.npy</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#d97706;box-shadow:0 0 0 2px #d97706"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>FAISS KNN index + Leiden clustering</strong> — nearest-neighbour graph → community detection → t-SNE visualisation <span class="file">→ results/clustering/</span></div>
+  </div>
+  <div class="pipe-item">
+    <div class="pipe-connector"><div class="pipe-dot" style="background:#7c3aed;box-shadow:0 0 0 2px #7c3aed"></div><div class="pipe-line"></div></div>
+    <div class="pipe-content"><strong>Phylogenetics + ASR</strong> — MAFFT alignment → FastTree → optional IQ-TREE2 ancestral sequence reconstruction <span class="file">→ results/trees/, results/iqtree/</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ BEFORE YOU START -->
+<h2 id="before-you-start"><span class="sec-num">2</span> Before you start</h2>
+
+<div class="callout info">
+  <div class="callout-icon">💡</div>
+  <div class="callout-body">
+    <strong>Use a T4 GPU runtime</strong>
+    In Google Colab, go to <em>Runtime → Change runtime type → T4 GPU</em> before running anything. The ESM2 embedding step is 10–30× faster on GPU. Without it, embedding ~1,500 sequences will take several hours instead of 20–30 minutes.
+  </div>
+</div>
+
+<div class="card">
+  <h3>What you need to provide</h3>
+  <table class="res-table">
+    <tr>
+      <th>What</th><th>Where to get it</th><th>Format</th>
+    </tr>
+    <tr>
+      <td><strong>Reference protein accessions</strong></td>
+      <td><a href="https://www.uniprot.org" target="_blank">UniProt.org</a> — search by gene name or function</td>
+      <td>UniProt accession codes (e.g. <code>Q99943</code>)</td>
+    </tr>
+    <tr>
+      <td><strong>Pfam domain ID</strong></td>
+      <td><a href="https://www.ebi.ac.uk/interpro" target="_blank">InterPro / Pfam</a> — search your protein family</td>
+      <td>Pfam accession (e.g. <code>PF01553</code>)</td>
+    </tr>
+    <tr>
+      <td><strong>Proteome FASTA(s)</strong></td>
+      <td>NCBI, UniProt proteomes, CRUSTOME, or any source of protein sequences</td>
+      <td><code>.faa</code> or <code>.fasta</code> — one file or one per species</td>
+    </tr>
+  </table>
+</div>
+
+<div class="callout tip">
+  <div class="callout-icon">📁</div>
+  <div class="callout-body">
+    <strong>Google Drive folder structure</strong>
+    The notebook reads from and writes to a subfolder on your Drive named after your <code>SURVEY_NAME</code>. Place your FASTA files here before running:
+    <pre style="margin-top:8px">MyDrive/{SURVEY_NAME}/
+  data/
+    proteins_filtered/    ← NCBI-derived proteome FASTAs
+    crustome_filtered/    ← CRUSTOME or other source FASTAs
+  results/                ← created automatically by the notebook
+  config.yaml             ← created automatically by the notebook</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ DATA PREP -->
+<h2 id="data-prep"><span class="sec-num">3</span> Data preparation</h2>
+
+<h3>Step 1 — Upload your proteome FASTAs</h3>
+<p>Upload your <code>.faa</code> or <code>.fasta</code> files to Google Drive. You can use one combined file or many per-species files — the notebook merges them automatically.</p>
+
+<div class="callout warn">
+  <div class="callout-icon">⚠️</div>
+  <div class="callout-body">
+    <strong>Pre-filtered vs raw proteomes</strong>
+    If your FASTAs are already length-filtered (200–500 AA), the filter step in the notebook is a harmless no-op — it will just pass all sequences through. If you are starting from full proteomes, the filter will remove very short fragments and large multi-domain proteins before the expensive HMMER and embedding steps.
+  </div>
+</div>
+
+<h3>Step 2 — Name your survey</h3>
+<p>In <strong>Step 3</strong> of the notebook, set <code>SURVEY_NAME</code> to a short identifier for your analysis (e.g. <code>'agpat_crustacea'</code>, <code>'kinase_insects'</code>). This name becomes the working folder on Drive and prefixes all output files.</p>
+
+<h3>Step 3 — Define your reference probes</h3>
+<p>In <strong>Step 4</strong>, replace <code>REFERENCE_PROBES</code> with UniProt accessions for your known protein family members. These are the "queries" used to label clusters and find homologues. A good reference set has 5–25 proteins representing the range of variants you expect to find.</p>
+
+<!-- ═══════════════════════════════════════ PIPELINE STEPS -->
+<h2 id="pipeline-steps"><span class="sec-num">4</span> Pipeline steps — cell by cell</h2>
+
+<!-- Legend -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;font-size:.83rem">
+  <span><span style="display:inline-block;width:12px;height:12px;background:var(--accent);border-radius:2px;margin-right:4px;vertical-align:middle"></span>User sets a value</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Runs automatically</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Heavy compute</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:var(--amber);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Moderate compute</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:var(--purple);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Optional</span>
+</div>
+
+<!-- Cell 0 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>00</div>
+  <div class="step-body">
+    <h3>Clone repo from GitHub</h3>
+    <p>Downloads the <code>protosearch</code> repository into <code>/content/protosearch</code> and installs Python dependencies from <code>requirements.txt</code>. Run once per Colab session.</p>
+    <p class="detail">Takes ~1 minute. Idempotent — skipped if already cloned.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">~1 min</span>
+    <span class="pill pill-grey">CPU only</span>
+    <span class="pill pill-grey">Once per session</span>
+  </div>
+</div>
+
+<!-- Cell 2 -->
+<div class="step mod-step">
+  <div class="step-num" style="background:var(--amber-lt);color:var(--amber)">Cell<br>02</div>
+  <div class="step-body">
+    <h3>Install system tools &amp; Python packages</h3>
+    <p>Installs <code>hmmer</code>, <code>mafft</code>, <code>fasttree</code> via apt, and all Python packages including <code>fair-esm</code>, <code>faiss-cpu</code>, <code>leidenalg</code>, and <code>ete3</code> via pip.</p>
+    <p class="detail">Takes 5–10 minutes on a fresh Colab session. The ESM2 model weights are downloaded later, at first use.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">5–10 min</span>
+    <span class="pill pill-grey">CPU only</span>
+    <span class="pill pill-grey">Once per session</span>
+  </div>
+</div>
+
+<!-- Cell 3 -->
+<div class="step user-step">
+  <div class="step-num" style="background:var(--accent-lt);color:var(--accent)">Cell<br>03</div>
+  <div class="step-body">
+    <h3>Set working directory <span class="user-action">✏ Edit required</span></h3>
+    <p>Mounts Google Drive and sets the working directory to <code>MyDrive/{SURVEY_NAME}/</code>.</p>
+    <div class="detail">
+      <strong>Set <code>SURVEY_NAME</code></strong> to a short identifier for your analysis:<br>
+      <code>SURVEY_NAME = 'agpat_crustacea'</code>
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-blue">Instant</span>
+    <span class="pill pill-blue">User config</span>
+  </div>
+</div>
+
+<!-- Cell 4 -->
+<div class="step user-step">
+  <div class="step-num" style="background:var(--accent-lt);color:var(--accent)">Cell<br>04</div>
+  <div class="step-body">
+    <h3>Define your protein family <span class="user-action">✏ Edit required</span></h3>
+    <p>Defines the reference probe list, Pfam IDs, length filter, clustering parameters, and catalytic motif patterns.</p>
+    <div class="detail">
+      <strong>Change for your family:</strong>
+      <ul style="margin-top:6px;padding-left:18px;font-size:.88rem;line-height:1.8">
+        <li><code>REFERENCE_PROBES</code> — list of (id, UniProt accession, label, colour) tuples</li>
+        <li><code>PFAM_IDS</code> — one or more Pfam IDs for the HMMER filter</li>
+        <li><code>MIN_LENGTH</code> / <code>MAX_LENGTH</code> — typical range for your family</li>
+        <li><code>ALPHAFOLD_TARGETS</code>, <code>CATALYTIC_MOTIFS</code> — optional; can be left as <code>{}</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-blue">Instant</span>
+    <span class="pill pill-blue">User config</span>
+  </div>
+</div>
+
+<!-- Cell 5 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>05</div>
+  <div class="step-body">
+    <h3>Write config.yaml</h3>
+    <p>Serialises your settings from Cell 04 into a <code>config.yaml</code> file in the working directory. This file drives all subsequent steps and can be manually edited at any time to tune clustering or tree parameters.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">Instant</span>
+    <span class="pill pill-grey">CPU only</span>
+  </div>
+</div>
+
+<!-- Cell 6 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>06</div>
+  <div class="step-body">
+    <h3>Download reference probes from UniProt</h3>
+    <p>Fetches the FASTA sequence for each accession in <code>REFERENCE_PROBES</code> using the UniProt REST API and saves them to <code>data/query_sequences/reference_probes.faa</code>. Skipped if the file already exists.</p>
+    <p class="detail">Requires internet access. Takes ~10–30 seconds depending on the number of probes.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">Network I/O</span>
+  </div>
+</div>
+
+<!-- Cell 7 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>07</div>
+  <div class="step-body">
+    <h3>Download Pfam HMM profile</h3>
+    <p>Fetches the HMM profile for each ID in <code>PFAM_IDS</code> from the Pfam database and presses it with <code>hmmpress</code>. Skipped if already downloaded.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">Network I/O</span>
+  </div>
+</div>
+
+<!-- Cell 8 -->
+<div class="step user-step">
+  <div class="step-num" style="background:var(--accent-lt);color:var(--accent)">Cell<br>08</div>
+  <div class="step-body">
+    <h3>Locate proteome FASTAs on Drive <span class="user-action">✏ Set INPUT_FASTAS</span></h3>
+    <p>Scans Google Drive for <code>.faa</code> and <code>.fasta</code> files, shows a directory-level summary with file counts and sizes, then asks you to confirm the input paths.</p>
+    <div class="detail">
+      The scanner prints a summary like:
+<pre style="margin:8px 0">  data/proteins_filtered/
+    153 files  |  248 MB total
+    glob: 'data/proteins_filtered/*.faa'
+  data/crustome_filtered/
+    178 files  |  191 MB total
+    glob: 'data/crustome_filtered/*.faa'</pre>
+      Set <code>INPUT_FASTAS</code> to the glob patterns shown:
+<pre style="margin:4px 0">INPUT_FASTAS = [
+    'data/proteins_filtered/*.faa',
+    'data/crustome_filtered/*.faa',
+]</pre>
+      The cell merges all matched files into a single <code>data/proteins_raw/combined_input.faa</code> (this is what the rest of the pipeline reads). <strong>Idempotent</strong> — delete <code>combined_input.faa</code> to re-merge from a different set.
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">1–5 min</span>
+    <span class="pill pill-grey">Drive I/O</span>
+  </div>
+</div>
+
+<!-- Cell 9 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>09</div>
+  <div class="step-body">
+    <h3>Filter by length + deduplicate</h3>
+    <p>Removes proteins shorter than <code>MIN_LENGTH</code> or longer than <code>MAX_LENGTH</code> amino acids, then removes exact-sequence duplicates within the combined FASTA. Writes <code>data/proteins_filtered.faa</code>.</p>
+    <p class="detail">If your FASTAs are already length-filtered, this step passes all sequences through unchanged — it is a safe no-op.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">CPU only</span>
+  </div>
+</div>
+
+<!-- Cell 10 -->
+<div class="step mod-step">
+  <div class="step-num" style="background:var(--amber-lt);color:var(--amber)">Cell<br>10</div>
+  <div class="step-body">
+    <h3>HMMER domain prefilter</h3>
+    <p>Runs <code>hmmsearch</code> against the downloaded Pfam profile. Only proteins with a significant domain hit (default E-value &lt; 1e-5) continue to the embedding step. This dramatically reduces the number of sequences that need to be embedded.</p>
+    <div class="detail">
+      For the crustacean AGPAT run: ~80,000 input sequences → ~1,500 HMMER hits (PF01553).
+      Takes 5–15 minutes depending on proteome size. Controlled by <code>hmmer.cpu</code> in <code>config.yaml</code>.
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">5–15 min</span>
+    <span class="pill pill-amber">CPU-bound</span>
+  </div>
+</div>
+
+<!-- Cell 11 -->
+<div class="step heavy-step">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red)">Cell<br>11</div>
+  <div class="step-body">
+    <h3>ESM2 embedding of HMMER hits 🔥 Most expensive step</h3>
+    <p>Loads the ESM2-650M protein language model and computes a 1,280-dimensional embedding for each HMMER hit sequence. These vectors capture evolutionary and structural information far beyond what sequence identity alone provides.</p>
+    <div class="detail">
+      <strong>Runtime (1,500 sequences):</strong><br>
+      &nbsp;• T4 GPU: ~20–30 minutes<br>
+      &nbsp;• CPU only: 3–6 hours<br><br>
+      <strong>Memory:</strong> ESM2-650M requires ~3 GB GPU RAM. Colab T4 has 16 GB — sufficient.<br><br>
+      On first run, the model weights (~1.3 GB) are downloaded from HuggingFace. Subsequent runs in the same session reuse the cached weights. Embeddings are saved to <code>data/embeddings/hits.npy</code> — delete to recompute.
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-red">20–30 min (GPU)</span>
+    <span class="pill pill-red">GPU strongly recommended</span>
+    <span class="pill pill-red">3 GB GPU RAM</span>
+  </div>
+</div>
+
+<!-- Cell 12 -->
+<div class="step mod-step">
+  <div class="step-num" style="background:var(--amber-lt);color:var(--amber)">Cell<br>12</div>
+  <div class="step-body">
+    <h3>ESM2 embedding of reference probes</h3>
+    <p>Embeds the small reference probe set (typically 15–25 sequences) using the already-loaded ESM2 model. Saved to <code>data/embeddings/ref.npy</code>.</p>
+    <p class="detail">Fast — seconds to a couple of minutes. Skipped if embeddings already exist.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">1–5 min</span>
+    <span class="pill pill-grey">GPU (loaded)</span>
+  </div>
+</div>
+
+<!-- Cell 13 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>13</div>
+  <div class="step-body">
+    <h3>Build FAISS KNN index</h3>
+    <p>Constructs a flat L2 nearest-neighbour index over all hit embeddings using FAISS. This enables both fast vector search and the k-NN graph used for Leiden clustering. Saves the index and an ID map to <code>data/knn_index/</code>.</p>
+    <p class="detail">Near-instant for &lt;50,000 vectors. Switch to <code>IndexIVFFlat</code> or <code>IndexHNSWFlat</code> if your dataset grows beyond ~1 million vectors.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">CPU only</span>
+  </div>
+</div>
+
+<!-- Cell 14 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>14</div>
+  <div class="step-body">
+    <h3>Query KNN — find nearest neighbours of reference probes</h3>
+    <p>For each reference probe, finds the <em>k</em> most similar sequences in the FAISS index (default k=50 per probe). Results saved to <code>results/knn_hits.tsv</code> with L2 distance scores.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">CPU only</span>
+  </div>
+</div>
+
+<!-- Cell 15 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>15</div>
+  <div class="step-body">
+    <h3>Distance distribution plot</h3>
+    <p>Diagnostic plot showing L2 distance vs KNN rank for each reference probe. Use this to choose or validate the distance threshold — the point where the curve flattens indicates the edge of the "true neighbour" zone.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">Instant</span>
+    <span class="pill pill-grey">Diagnostic</span>
+  </div>
+</div>
+
+<!-- Cell 16 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>16</div>
+  <div class="step-body">
+    <h3>Load embeddings for clustering</h3>
+    <p>Loads the hit and reference embeddings from <code>.npy</code> files into memory in preparation for clustering.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">Instant</span>
+    <span class="pill pill-grey">I/O only</span>
+  </div>
+</div>
+
+<!-- Cell 17 -->
+<div class="step mod-step">
+  <div class="step-num" style="background:var(--amber-lt);color:var(--amber)">Cell<br>17</div>
+  <div class="step-body">
+    <h3>Leiden clustering</h3>
+    <p>Runs the full unsupervised clustering pipeline: PCA dimensionality reduction → FAISS k-NN graph construction → Leiden community detection → majority-vote labelling of each community by its nearest reference probe. Saves assignments and a cluster summary to <code>results/clustering/</code>.</p>
+    <div class="detail">
+      Key tunable parameters in Cell 04 / <code>config.yaml</code>:
+      <ul style="margin-top:6px;padding-left:18px;font-size:.88rem;line-height:1.8">
+        <li><code>k_neighbors</code> — graph connectivity (default 25; increase for smoother boundaries)</li>
+        <li><code>resolution</code> — Leiden resolution (higher = more, smaller clusters)</li>
+        <li><code>pca_dims</code> — PCA components before k-NN graph (default 50)</li>
+      </ul>
+      Also runs t-SNE for 2D visualisation. Takes 2–8 minutes depending on dataset size.
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">2–8 min</span>
+    <span class="pill pill-grey">CPU-bound</span>
+  </div>
+</div>
+
+<!-- Cell 18 -->
+<div class="step auto-step">
+  <div class="step-num" style="background:var(--green-lt);color:var(--green)">Cell<br>18</div>
+  <div class="step-body">
+    <h3>t-SNE cluster plot</h3>
+    <p>Renders the 2D t-SNE projection coloured by Leiden community, with reference probes overlaid. Saved to <code>results/clustering/tsne_clusters.png</code>.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-green">&lt;1 min</span>
+    <span class="pill pill-grey">CPU only</span>
+  </div>
+</div>
+
+<!-- Cell 19 -->
+<div class="step optional">
+  <div class="step-num" style="background:var(--purple-lt);color:var(--purple)">Cell<br>19</div>
+  <div class="step-body">
+    <h3>Sub-clustering <span class="pill pill-grey" style="font-size:.72rem">Optional</span></h3>
+    <p>Re-runs clustering on a single community of interest to resolve its internal structure. Set <code>SUBCLUSTER</code> to a cluster label (e.g. <code>'LCLAT1'</code>) to activate. Results saved under <code>results/clustering/</code>.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-purple">Optional</span>
+    <span class="pill pill-amber">2–5 min</span>
+  </div>
+</div>
+
+<!-- Cell 20 -->
+<div class="step mod-step">
+  <div class="step-num" style="background:var(--amber-lt);color:var(--amber)">Cell<br>20</div>
+  <div class="step-body">
+    <h3>MAFFT alignment + FastTree</h3>
+    <p>For each cluster of interest, extracts the hit sequences, runs a MAFFT multiple sequence alignment, and builds an approximate ML phylogenetic tree with FastTree (LG substitution model). Trees saved in Newick format to <code>results/trees/{cluster}/</code>.</p>
+    <div class="detail">
+      Time depends heavily on cluster size. With <code>--auto</code> flag:
+      <ul style="margin-top:4px;padding-left:18px;font-size:.88rem;line-height:1.8">
+        <li>&lt;200 sequences: ~2–5 minutes</li>
+        <li>200–500 sequences: ~10–20 minutes</li>
+        <li>&gt;500 sequences: consider splitting clusters</li>
+      </ul>
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-amber">5–20 min</span>
+    <span class="pill pill-amber">CPU-bound</span>
+  </div>
+</div>
+
+<!-- Cell 21 -->
+<div class="step optional">
+  <div class="step-num" style="background:var(--purple-lt);color:var(--purple)">Cell<br>21</div>
+  <div class="step-body">
+    <h3>IQ-TREE2 ancestral state reconstruction <span class="pill pill-red" style="font-size:.72rem">Slow</span></h3>
+    <p>Runs IQ-TREE2 with bootstrap resampling and ancestral state reconstruction (ASR). Produces a high-confidence tree with branch support values and probability distributions over ancestral amino acid states at each internal node.</p>
+    <div class="detail">
+      Set <code>RUN_IQTREE = True</code> to activate. Controlled by <code>IQTREE_BOOTSTRAP</code> and <code>IQTREE_THREADS</code>.<br><br>
+      <strong>Runtime per cluster on T4:</strong> 30–90 minutes depending on sequence count and bootstrap replicates. IQ-TREE2 is downloaded from GitHub at first run.
+    </div>
+  </div>
+  <div class="res">
+    <span class="pill pill-purple">Optional</span>
+    <span class="pill pill-red">30–90 min</span>
+    <span class="pill pill-red">Very slow on CPU</span>
+  </div>
+</div>
+
+<!-- Cell 22 -->
+<div class="step optional">
+  <div class="step-num" style="background:var(--purple-lt);color:var(--purple)">Cell<br>22</div>
+  <div class="step-body">
+    <h3>Parse ASR + generate plots</h3>
+    <p>Reads the IQ-TREE2 <code>.state</code> output, identifies key ancestral nodes, computes consensus ancestral sequences, and generates three plot types per cluster: sequence logos at variable positions, an ancestral amino acid probability table, and a root confidence / diversity chart. Saved to <code>results/plots/ancestral/{cluster}/</code>.</p>
+  </div>
+  <div class="res">
+    <span class="pill pill-purple">Optional</span>
+    <span class="pill pill-amber">2–5 min</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ RESOURCE GUIDE -->
+<h2 id="resource-guide"><span class="sec-num">5</span> Resource requirements at a glance</h2>
+
+<table class="res-table">
+  <thead>
+    <tr>
+      <th>Step</th>
+      <th>CPU time</th>
+      <th>GPU time (T4)</th>
+      <th>RAM / VRAM</th>
+      <th>Disk</th>
+      <th>Intensity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Install packages</strong> (Cell 02)</td>
+      <td>5–10 min</td>
+      <td>5–10 min</td>
+      <td>~2 GB RAM</td>
+      <td>~3 GB</td>
+      <td><div class="meter"><div class="meter-fill" style="width:30%;background:#d97706"></div></div></td>
+    </tr>
+    <tr>
+      <td><strong>Combine FASTAs</strong> (Cell 08)</td>
+      <td>1–5 min</td>
+      <td>1–5 min</td>
+      <td>Minimal</td>
+      <td>~50–500 MB</td>
+      <td><div class="meter"><div class="meter-fill" style="width:15%;background:#16a34a"></div></div></td>
+    </tr>
+    <tr>
+      <td><strong>HMMER prefilter</strong> (Cell 10)</td>
+      <td>5–15 min</td>
+      <td>5–15 min</td>
+      <td>~1–2 GB RAM</td>
+      <td>Small</td>
+      <td><div class="meter"><div class="meter-fill" style="width:40%;background:#d97706"></div></div></td>
+    </tr>
+    <tr style="background:#fef2f2">
+      <td><strong>ESM2 embedding — hits</strong> (Cell 11) 🔥</td>
+      <td>3–6 hours</td>
+      <td><strong>20–30 min</strong></td>
+      <td>3 GB VRAM; 8 GB RAM</td>
+      <td>~5–20 MB (NPY)</td>
+      <td><div class="meter"><div class="meter-fill" style="width:95%;background:#dc2626"></div></div></td>
+    </tr>
+    <tr>
+      <td><strong>Leiden clustering</strong> (Cell 17)</td>
+      <td>2–8 min</td>
+      <td>2–8 min</td>
+      <td>~2–4 GB RAM</td>
+      <td>Small</td>
+      <td><div class="meter"><div class="meter-fill" style="width:35%;background:#d97706"></div></div></td>
+    </tr>
+    <tr>
+      <td><strong>MAFFT alignment</strong> (Cell 20)</td>
+      <td>5–20 min</td>
+      <td>5–20 min</td>
+      <td>~1 GB RAM</td>
+      <td>~1–10 MB</td>
+      <td><div class="meter"><div class="meter-fill" style="width:40%;background:#d97706"></div></div></td>
+    </tr>
+    <tr style="background:#f5f3ff">
+      <td><strong>IQ-TREE2 ASR</strong> (Cell 21, optional)</td>
+      <td>2–4 hours</td>
+      <td>30–90 min (CPU still used)</td>
+      <td>4–8 GB RAM</td>
+      <td>~10–100 MB</td>
+      <td><div class="meter"><div class="meter-fill" style="width:80%;background:#7c3aed"></div></div></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn" style="margin-top:20px">
+  <div class="callout-icon">⏱️</div>
+  <div class="callout-body">
+    <strong>Colab session limits</strong>
+    Free-tier Colab sessions disconnect after ~12 hours of inactivity. The notebook is designed to be <strong>idempotent</strong> — every expensive step checks for an existing output file and skips recomputation if it finds one. This means you can restart a session and continue where you left off, as long as your data is on Google Drive (not in the ephemeral <code>/content</code> directory).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ CUSTOMISING -->
+<h2 id="customising"><span class="sec-num">6</span> Customising for your protein family</h2>
+
+<div class="card">
+  <h3>Minimum changes to run on a new family</h3>
+  <ol style="padding-left:20px;line-height:2.2">
+    <li><strong>Cell 03:</strong> <code>SURVEY_NAME = 'your_family_name'</code></li>
+    <li><strong>Cell 04:</strong> Replace <code>REFERENCE_PROBES</code> with your UniProt accessions</li>
+    <li><strong>Cell 04:</strong> Replace <code>PFAM_IDS</code> with your Pfam domain(s)</li>
+    <li><strong>Cell 08:</strong> Set <code>INPUT_FASTAS</code> to your proteome glob patterns</li>
+  </ol>
+</div>
+
+<h3>Finding your Pfam domain ID</h3>
+<ol style="padding-left:20px;line-height:1.9;margin-bottom:12px">
+  <li>Go to <a href="https://www.ebi.ac.uk/interpro" target="_blank">InterPro</a> and search for your protein family</li>
+  <li>Find the relevant Pfam entry (usually labelled <em>Pfam → Family</em> or <em>Pfam → Domain</em>)</li>
+  <li>Copy the PF number (e.g. <code>PF00069</code> for protein kinase domain)</li>
+</ol>
+
+<div class="callout tip">
+  <div class="callout-icon">🎯</div>
+  <div class="callout-body">
+    <strong>Calibrate your distance threshold</strong>
+    Before querying unknowns, check that all your reference probes cluster tightly together in the t-SNE plot (Cell 18). If close family members scatter to different areas, try increasing <code>k_neighbors</code> or decreasing <code>resolution</code> in <code>config.yaml</code>.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ OUTPUTS -->
+<h2 id="outputs"><span class="sec-num">7</span> Output files</h2>
+
+<div class="card">
+  <table class="res-table">
+    <thead><tr><th>File</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>data/proteins_raw/combined_input.faa</code></td><td>Merged input proteome from all INPUT_FASTAS</td></tr>
+      <tr><td><code>data/proteins_filtered.faa</code></td><td>Length-filtered, deduplicated sequences</td></tr>
+      <tr><td><code>data/hmmer_hits/</code></td><td>Per-file HMMER hit sequences</td></tr>
+      <tr><td><code>data/embeddings/hits.npy</code></td><td>ESM2 embeddings — shape (N, 1280) float32</td></tr>
+      <tr><td><code>data/knn_index/hits.index</code></td><td>FAISS flat-L2 index</td></tr>
+      <tr><td><code>results/knn_hits.tsv</code></td><td>KNN query results with L2 distances</td></tr>
+      <tr><td><code>results/clustering/cluster_assignments.tsv</code></td><td>Per-protein cluster label + nearest reference probe</td></tr>
+      <tr><td><code>results/clustering/cluster_summary.tsv</code></td><td>Cluster sizes, dominant labels, representative proteins</td></tr>
+      <tr><td><code>results/clustering/tsne_clusters.png</code></td><td>t-SNE plot coloured by Leiden community</td></tr>
+      <tr><td><code>results/trees/{cluster}/</code></td><td>MAFFT alignment + FastTree Newick per cluster</td></tr>
+      <tr><td><code>results/iqtree/{cluster}/</code></td><td>IQ-TREE2 tree, bootstrap values, ancestral state files</td></tr>
+      <tr><td><code>results/plots/ancestral/{cluster}/</code></td><td>Sequence logos, ancestral AA tables, root confidence plots</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════ TROUBLESHOOTING -->
+<h2 id="troubleshooting"><span class="sec-num">8</span> Troubleshooting</h2>
+
+<div class="step heavy-step" style="border-radius:var(--radius);margin-bottom:10px">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red);font-size:.72rem;font-weight:700;width:52px">Issue</div>
+  <div class="step-body">
+    <h3>"CUDA out of memory" during embedding</h3>
+    <p>Lower the batch size in Cell 04: <code>cfg.embedding['batch_size'] = 16</code> (down from 32). Alternatively, use <code>'device': 'cpu'</code> — slower, but uses RAM instead of VRAM.</p>
+  </div>
+</div>
+
+<div class="step heavy-step" style="border-radius:var(--radius);margin-bottom:10px">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red);font-size:.72rem;font-weight:700;width:52px">Issue</div>
+  <div class="step-body">
+    <h3>No FASTA files found by the scanner in Cell 08</h3>
+    <p>Check that you have mounted Google Drive (Cell 03 must have completed successfully). Verify the file is in <code>MyDrive/{SURVEY_NAME}/data/proteins_filtered/</code>. You can also supply an absolute Drive path directly: <code>INPUT_FASTAS = ['/content/drive/MyDrive/my_data/proteome.faa']</code>.</p>
+  </div>
+</div>
+
+<div class="step heavy-step" style="border-radius:var(--radius);margin-bottom:10px">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red);font-size:.72rem;font-weight:700;width:52px">Issue</div>
+  <div class="step-body">
+    <h3>HMMER finds zero hits</h3>
+    <p>The E-value threshold may be too strict, or the wrong Pfam ID is set. Try relaxing <code>hmmer.evalue</code> to <code>1e-3</code> in <code>config.yaml</code>. Also verify your Pfam ID on <a href="https://www.ebi.ac.uk/interpro" target="_blank">InterPro</a> — some families span multiple Pfam domains; you may need to add more entries to <code>PFAM_IDS</code>.</p>
+  </div>
+</div>
+
+<div class="step heavy-step" style="border-radius:var(--radius);margin-bottom:10px">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red);font-size:.72rem;font-weight:700;width:52px">Issue</div>
+  <div class="step-body">
+    <h3>All sequences end up in one cluster</h3>
+    <p>Increase the Leiden <code>resolution</code> parameter (try 1.5 or 2.0). If that doesn't help, try increasing <code>k_neighbors</code>. Re-run from Cell 17 — you don't need to re-embed.</p>
+  </div>
+</div>
+
+<div class="step heavy-step" style="border-radius:var(--radius);margin-bottom:10px">
+  <div class="step-num" style="background:var(--red-lt);color:var(--red);font-size:.72rem;font-weight:700;width:52px">Issue</div>
+  <div class="step-body">
+    <h3>Colab disconnected mid-run</h3>
+    <p>Reconnect and re-run from Cell 00. All steps that write output files check for existing results and skip recomputation — you will only repeat steps that hadn't finished. The most important files to preserve between sessions are the <code>.npy</code> embedding files, which take the longest to produce.</p>
+  </div>
+</div>
+
+<footer>
+  Protosearch · AGPAT Crustacea Survey · <a href="https://github.com/bjdraper/protosearch" target="_blank">github.com/bjdraper/protosearch</a>
+</footer>
+
+</div><!-- /page -->
+</body>
+</html>
