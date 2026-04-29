@@ -5,6 +5,10 @@ import subprocess
 from pathlib import Path
 
 
+def _count_seqs(fasta_path: Path) -> int:
+    return sum(1 for line in Path(fasta_path).read_text().splitlines() if line.startswith(">"))
+
+
 def align(
     fasta_path:  str | Path,
     output_path: str | Path,
@@ -57,6 +61,12 @@ def iqtree(
     output_dir.mkdir(parents=True, exist_ok=True)
     full_prefix = output_dir / prefix
 
+    n_seqs = _count_seqs(aligned_path)
+    if n_seqs < 4:
+        raise ValueError(
+            f"IQ-TREE2 requires ≥4 sequences; {aligned_path} has {n_seqs}."
+        )
+
     cmd = [
         iqtree_bin,
         "-s", str(aligned_path),
@@ -70,7 +80,13 @@ def iqtree(
     else:
         cmd += ["-B", str(bootstrap)]
 
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"IQ-TREE2 failed (exit {result.returncode}).\n"
+            f"Command: {' '.join(cmd)}\n"
+            f"stderr:\n{result.stderr}"
+        )
 
     return {
         "treefile": full_prefix.with_suffix(".treefile"),
@@ -102,9 +118,14 @@ def run_iqtree_asr(
     model:        str = "LG+G4",
     bootstrap:    int = 1000,
     threads:      int = 4,
-) -> dict[str, Path]:
-    """IQ-TREE2 with ancestral state reconstruction. Returns dict of output paths."""
-    prefix = Path(aligned_path).stem
+) -> dict[str, Path] | None:
+    """IQ-TREE2 with ancestral state reconstruction. Returns dict of output paths, or None if skipped."""
+    aligned_path = Path(aligned_path)
+    n_seqs = _count_seqs(aligned_path)
+    if n_seqs < 4:
+        print(f"  Skipping {aligned_path.name}: only {n_seqs} sequence(s), need ≥4.")
+        return None
+    prefix = aligned_path.stem
     return iqtree(aligned_path, output_dir, prefix,
                   model=model, bootstrap=bootstrap, threads=threads, asr=True)
 
