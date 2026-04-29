@@ -125,6 +125,56 @@ def run_clustering(
     )
 
 
+def leiden_cluster(
+    embeddings:   np.ndarray,
+    resolution:   float = 2.0,
+    k_neighbors:  int   = 25,
+    pca_dims:     int   = 50,
+    random_state: int   = 42,
+) -> list[int]:
+    """
+    PCA → FAISS KNN graph → Leiden community detection.
+    Returns a list of integer cluster labels (one per sequence).
+    """
+    import faiss, leidenalg, igraph
+
+    n_components = min(pca_dims, embeddings.shape[0] - 1, embeddings.shape[1])
+    pca_emb = PCA(n_components=n_components, random_state=random_state).fit_transform(embeddings)
+
+    k = min(k_neighbors, len(embeddings) - 1)
+    index = faiss.IndexFlatL2(pca_emb.shape[1])
+    index.add(pca_emb.astype(np.float32))
+    dists, nbrs = index.search(pca_emb.astype(np.float32), k + 1)
+
+    edges, weights = [], []
+    for i in range(len(embeddings)):
+        for j_pos in range(1, k + 1):
+            j = int(nbrs[i, j_pos])
+            d = float(dists[i, j_pos])
+            edges.append((i, j))
+            weights.append(1.0 / (d + 1e-9))
+
+    g = igraph.Graph(n=len(embeddings), edges=edges, directed=False)
+    g.es["weight"] = weights
+    partition = leidenalg.find_partition(
+        g, leidenalg.RBConfigurationVertexPartition,
+        weights="weight", resolution_parameter=resolution, seed=random_state,
+    )
+    return partition.membership
+
+
+def run_tsne(
+    embeddings:   np.ndarray,
+    perplexity:   float = 100,
+    pca_dims:     int   = 50,
+    random_state: int   = 42,
+) -> np.ndarray:
+    """PCA → t-SNE. Returns (N, 2) coordinate array."""
+    n_components = min(pca_dims, embeddings.shape[0] - 1, embeddings.shape[1])
+    pca_emb = PCA(n_components=n_components, random_state=random_state).fit_transform(embeddings)
+    return _tsne(pca_emb, perplexity=perplexity, cache=None, random_state=random_state)
+
+
 def _tsne(pca_emb: np.ndarray, perplexity: float,
           cache: str | Path | None, random_state: int) -> np.ndarray:
     if cache and Path(cache).exists():

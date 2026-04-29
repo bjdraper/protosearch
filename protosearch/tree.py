@@ -79,6 +79,35 @@ def iqtree(
     }
 
 
+def align_and_tree(
+    fasta_path:   str | Path,
+    output_prefix: str | Path,
+    mafft_flags:  str = "--auto --thread 4 --quiet",
+    model:        str = "lg",
+) -> tuple[Path, Path]:
+    """MAFFT align + FastTree. Returns (aligned_faa, tree_newick)."""
+    output_prefix = Path(output_prefix)
+    output_prefix.parent.mkdir(parents=True, exist_ok=True)
+    aligned  = Path(str(output_prefix) + "_aligned.faa")
+    tree_out = Path(str(output_prefix) + ".tree")
+    align(fasta_path, aligned, flags=mafft_flags)
+    fasttree(aligned, tree_out, model=model)
+    return aligned, tree_out
+
+
+def run_iqtree_asr(
+    aligned_path: str | Path,
+    output_dir:   str | Path,
+    model:        str = "LG+G4",
+    bootstrap:    int = 1000,
+    threads:      int = 4,
+) -> dict[str, Path]:
+    """IQ-TREE2 with ancestral state reconstruction. Returns dict of output paths."""
+    prefix = Path(aligned_path).stem
+    return iqtree(aligned_path, output_dir, prefix,
+                  model=model, bootstrap=bootstrap, threads=threads, asr=True)
+
+
 def build_cluster_trees(
     cluster_fastas: dict[str, Path],   # {cluster_name: fasta_path}
     output_root:    str | Path,

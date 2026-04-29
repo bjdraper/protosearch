@@ -12,47 +12,89 @@ import matplotlib.patches as mpatches
 
 # ── t-SNE scatter ─────────────────────────────────────────────────────────────
 
+_PALETTE = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+    "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5",
+    "#c49c94", "#f7b6d2", "#c7c7c7", "#dbdb8d", "#9edae5",
+]
+
+
 def plot_tsne(
-    coords:        np.ndarray,
-    labels:        list[str],
-    label_colours: dict[str, str],
-    ref_coords:    Optional[np.ndarray] = None,
-    ref_ids:       Optional[list[str]]  = None,
-    ref_labels:    Optional[dict[str, str]] = None,
-    ref_colours:   Optional[dict[str, str]] = None,
-    title:         str = "Clustering",
-    figsize:       tuple = (10, 8),
+    coords:           np.ndarray,
+    labels:           list,
+    ids:              list[str],
+    ref_emb:          Optional[np.ndarray] = None,
+    ref_ids:          Optional[list[str]]  = None,
+    reference_probes: Optional[list]       = None,
+    save_path:        Optional[str]        = None,
+    title:            str   = "Clustering",
+    figsize:          tuple = (10, 8),
 ) -> plt.Figure:
+    """
+    Plot t-SNE coloured by cluster label.
+
+    labels: integer or string cluster assignments (one per row of coords).
+    ids: protein IDs corresponding to coords rows.
+    ref_emb / ref_ids: accepted for API compatibility; reference probes cannot be
+        projected into an already-fitted t-SNE and are shown in the legend only.
+    reference_probes: list of dicts with keys 'id', 'label', 'colour' — used to
+        name and colour reference entries in the legend.
+    save_path: if given, the figure is saved here (PNG/SVG/PDF).
+    """
+    unique_labels = sorted(set(labels))
+    colour_map = {lbl: _PALETTE[i % len(_PALETTE)] for i, lbl in enumerate(unique_labels)}
+
     fig, ax = plt.subplots(figsize=figsize)
     ax.set_facecolor("#F8F8F8")
 
-    for label in sorted(set(labels)):
-        mask = np.array([l == label for l in labels])
-        col  = label_colours.get(label, "#888888")
+    for lbl in unique_labels:
+        mask = np.array([l == lbl for l in labels])
         ax.scatter(coords[mask, 0], coords[mask, 1],
-                   c=col, s=8, alpha=0.6, linewidths=0, label=label)
+                   c=colour_map[lbl], s=8, alpha=0.6, linewidths=0)
 
-    if ref_coords is not None and ref_ids is not None:
-        for i, rid in enumerate(ref_ids):
-            col   = (ref_colours or {}).get(rid, "#333333")
-            label = (ref_labels  or {}).get(rid, rid)
-            ax.scatter(ref_coords[i, 0], ref_coords[i, 1],
-                       c=col, s=120, marker="*", edgecolors="black", linewidths=0.5, zorder=5)
-            ax.annotate(label, ref_coords[i], fontsize=6, ha="left", va="bottom",
-                        xytext=(3, 3), textcoords="offset points")
+    handles = [mpatches.Patch(color=colour_map[l], label=f"Cluster {l}")
+               for l in unique_labels]
 
-    handles = [mpatches.Patch(color=label_colours.get(l, "#888888"), label=l)
-               for l in sorted(set(labels))]
-    ax.legend(handles=handles, fontsize=7, framealpha=0.8,
-              loc="upper left", markerscale=1.5)
-    ax.set_title(title, fontsize=12, fontweight="bold")
+    if reference_probes:
+        probe_names = ", ".join(p.get("label", p.get("id", "?")) for p in reference_probes[:5])
+        title = f"{title}\nRef probes (legend only): {probe_names}"
+
+    ax.legend(handles=handles, fontsize=7, framealpha=0.8, loc="upper left")
+    ax.set_title(title, fontsize=11, fontweight="bold")
     ax.set_xlabel("t-SNE 1"); ax.set_ylabel("t-SNE 2")
     ax.set_xticks([]); ax.set_yticks([])
     fig.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+
     return fig
 
 
 # ── FastTree / Newick tree ────────────────────────────────────────────────────
+
+def plot_ancestral_logo(
+    anc_dict:   dict,
+    output_path: str,
+    top_n:       int = 20,
+) -> None:
+    """
+    Convenience wrapper: compute variable positions and save sequence logos.
+
+    anc_dict: output of asr.parse_state_file — {node_name: (n_sites, 20) array}.
+    output_path: path to save the figure (PNG/SVG/PDF).
+    """
+    from .asr import variable_positions, AA_ORDER
+    if not anc_dict:
+        print("  plot_ancestral_logo: anc_dict is empty, nothing to plot.")
+        return
+    n_sites = next(iter(anc_dict.values())).shape[0]
+    var_pos = variable_positions(anc_dict, top_n=min(top_n, n_sites), aa_order=AA_ORDER)
+    fig = plot_sequence_logos(anc_dict, var_pos, AA_ORDER)
+    fig.savefig(output_path, bbox_inches="tight", dpi=150)
+    plt.close(fig)
+
 
 def plot_tree(
     newick_path:   str | Path,

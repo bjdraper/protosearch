@@ -98,3 +98,29 @@ def fetch_uniprot_sequences(accessions: list[str], output_path: str | Path) -> N
     """Fetch multiple UniProt accessions and write them to a FASTA file."""
     records = [fetch_uniprot_sequence(acc) for acc in accessions]
     write_fasta(records, output_path)
+
+
+def filter_and_dedup(
+    in_fasta:  str | Path,
+    out_fasta: str | Path,
+    min_len:   int = 200,
+    max_len:   int = 500,
+) -> int:
+    """Read FASTA, filter by length, deduplicate, write. Returns sequence count."""
+    records = read_fasta(in_fasta)
+    records = filter_by_length(records, min_len, max_len)
+    records = deduplicate_fasta(records)
+    write_fasta(records, out_fasta)
+    return len(records)
+
+
+def extract_sequences(
+    fasta_path:  str | Path,
+    ids:         list[str],
+    output_path: str | Path,
+) -> int:
+    """Extract sequences matching ids from fasta_path and write to output_path."""
+    id_set  = set(ids)
+    records = [(rid, seq) for rid, seq in read_fasta(fasta_path) if rid in id_set]
+    write_fasta(records, output_path)
+    return len(records)

@@ -65,6 +65,27 @@ def save_embeddings(embeddings: np.ndarray, ids: list[str],
     Path(ids_path).write_text("\n".join(ids))
 
 
+def embed_fasta(
+    fasta_path: str | Path,
+    emb_path:   str | Path,
+    ids_path:   str | Path,
+    device:     str = "cuda",
+    model_name: str = "esm2_t33_650M_UR50D",
+    batch_size: int = 32,
+    layer:      int = 33,
+) -> tuple[np.ndarray, list[str]]:
+    """Read a FASTA file, embed all sequences, and save embeddings + ids to disk."""
+    from .utils import read_fasta
+    Path(emb_path).parent.mkdir(parents=True, exist_ok=True)
+    sequences  = read_fasta(fasta_path)
+    embeddings, ids = embed_sequences(
+        sequences, model_name=model_name, batch_size=batch_size,
+        device=device, layer=layer,
+    )
+    save_embeddings(embeddings, ids, emb_path, ids_path)
+    return embeddings, ids
+
+
 def load_embeddings(*stems: tuple[Path, Path]) -> tuple[np.ndarray, list[str]]:
     """
     Load and concatenate multiple (npy_path, ids_path) pairs.

@@ -12,12 +12,11 @@ import pandas as pd
 # ── HMMER ─────────────────────────────────────────────────────────────────────
 
 def download_hmm_profile(pfam_id: str, output_path: str | Path) -> Path:
-    """Download a Pfam HMM profile from EBI."""
+    """Download a Pfam HMM profile from EBI to a specific file path."""
     from .utils import http_get
+    import gzip
     url  = f"https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/{pfam_id}?annotation=hmm"
     data = http_get(url, timeout=60)
-    # EBI returns gzipped HMM
-    import gzip, io
     try:
         data = gzip.decompress(data)
     except Exception:
@@ -26,50 +25,70 @@ def download_hmm_profile(pfam_id: str, output_path: str | Path) -> Path:
     return Path(output_path)
 
 
+def download_pfam_hmm(pfam_id: str, hmm_dir: str | Path) -> Path:
+    """Download a Pfam HMM profile into hmm_dir as <pfam_id>.hmm."""
+    hmm_dir = Path(hmm_dir)
+    hmm_dir.mkdir(parents=True, exist_ok=True)
+    return download_hmm_profile(pfam_id, hmm_dir / f"{pfam_id}.hmm")
+
+
 def run_hmmer(
-    fasta_path: str | Path,
-    hmm_path:   str | Path,
-    output_dir: str | Path,
-    evalue:     float = 1e-5,
-    cpu:        int   = 4,
-    name_filter: str  = "",
+    fasta_path:      str | Path,
+    hmm_dir_or_path: str | Path,
+    hits_fasta:      str | Path,
+    hits_tsv:        str | Path | None = None,
+    evalue:          float = 1e-5,
+    cpu:             int   = 4,
+    name_filter:     str   = "",
 ) -> Path:
     """
-    Run hmmsearch against fasta_path. Return path to hits FASTA.
-    name_filter: if set, only keep hits where query name contains this string.
+    Run hmmsearch and write hits to hits_fasta.
+
+    hmm_dir_or_path: a single .hmm file OR a directory — all .hmm files in the
+                     directory are searched and hits are merged.
+    hits_tsv:        optional path for the domain table output.
+    Returns path to hits_fasta.
     """
-    from .utils import read_fasta, write_fasta
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    from .utils import read_fasta, write_fasta, deduplicate_fasta
 
-    stem     = Path(fasta_path).stem
-    domtbl   = output_dir / f"{stem}.domtblout"
-    hits_faa = output_dir / f"{stem}_hmmer.faa"
+    hits_fasta = Path(hits_fasta)
+    hits_fasta.parent.mkdir(parents=True, exist_ok=True)
 
-    subprocess.run(
-        ["hmmsearch", "--domtblout", str(domtbl),
-         "--noali", f"--cpu", str(cpu), "-E", "0.01", str(hmm_path), str(fasta_path)],
-        check=True, capture_output=True,
-    )
+    hmm_path = Path(hmm_dir_or_path)
+    hmm_files = sorted(hmm_path.glob("*.hmm")) if hmm_path.is_dir() else [hmm_path]
+    if not hmm_files:
+        raise FileNotFoundError(f"No .hmm files found in {hmm_path}")
 
-    # parse domain table
-    hit_ids = set()
-    for line in domtbl.read_text().splitlines():
-        if line.startswith("#"):
-            continue
-        cols = line.split()
-        if len(cols) < 14:
-            continue
-        query_name = cols[3]
-        dom_ievalue = float(cols[12])
-        if dom_ievalue <= evalue:
-            if not name_filter or name_filter.lower() in query_name.lower():
-                hit_ids.add(cols[0])  # target name (protein ID)
+    all_hit_ids: set[str] = set()
+    last_domtbl: Path | None = None
+
+    for hmm_file in hmm_files:
+        domtbl = hits_fasta.parent / f"{Path(fasta_path).stem}_{hmm_file.stem}.domtblout"
+        subprocess.run(
+            ["hmmsearch", "--domtblout", str(domtbl),
+             "--noali", "--cpu", str(cpu), "-E", "0.01",
+             str(hmm_file), str(fasta_path)],
+            check=True, capture_output=True,
+        )
+        for line in domtbl.read_text().splitlines():
+            if line.startswith("#"):
+                continue
+            cols = line.split()
+            if len(cols) < 14:
+                continue
+            if float(cols[12]) <= evalue:
+                if not name_filter or name_filter.lower() in cols[3].lower():
+                    all_hit_ids.add(cols[0])
+        last_domtbl = domtbl
+
+    if hits_tsv and last_domtbl:
+        import shutil
+        shutil.copy(last_domtbl, hits_tsv)
 
     all_records = read_fasta(fasta_path)
-    hits = [(rid, seq) for rid, seq in all_records if rid in hit_ids]
-    write_fasta(hits, hits_faa)
-    return hits_faa
+    hits = deduplicate_fasta([(rid, seq) for rid, seq in all_records if rid in all_hit_ids])
+    write_fasta(hits, hits_fasta)
+    return hits_fasta
 
 
 # ── FAISS KNN index ──────────────────────────────────────────────────────────

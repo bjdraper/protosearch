@@ -88,26 +88,28 @@ def find_key_nodes(
 
 def parse_state_file(
     state_file:   str | Path,
-    target_nodes: set[str],
+    target_nodes: set[str] | None = None,
     aa_order:     list[str] = AA_ORDER,
     chunksize:    int = 100_000,
 ) -> dict[str, np.ndarray]:
     """
-    Parse IQ-TREE2 .state file for the given node names.
+    Parse IQ-TREE2 .state file.
+    target_nodes: set of node names to extract; None = all nodes in file.
     Returns {node_name: array shape (n_sites, 20)}.
     """
-    # IQ-TREE2 columns are p_A, p_R, ...; rename to single letters
     rename = {f"p_{a}": a for a in aa_order}
-
-    node_data: dict[str, list] = {n: [] for n in target_nodes}
+    node_data: dict[str, list] = {}
 
     for chunk in pd.read_csv(state_file, sep="\t", comment="#", chunksize=chunksize):
         chunk = chunk.rename(columns=rename)
-        sub   = chunk[chunk["Node"].isin(target_nodes)]
-        if sub.empty:
+        if target_nodes is not None:
+            chunk = chunk[chunk["Node"].isin(target_nodes)]
+        if chunk.empty:
             continue
-        for node, grp in sub.groupby("Node"):
+        for node, grp in chunk.groupby("Node"):
             probs = grp[aa_order].values.astype(np.float32)
+            if node not in node_data:
+                node_data[node] = []
             node_data[node].append(probs)
 
     return {node: np.vstack(chunks) for node, chunks in node_data.items() if chunks}
