@@ -33,7 +33,7 @@ def _embed_nvidia(
 ) -> tuple[np.ndarray, list[str]]:
     import requests, time
 
-    url     = "https://api.nvidia.com/v1/embeddings"
+    url     = "https://integrate.api.nvidia.com/v1/embeddings"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     sleep_s = 60.0 / rpm_limit + 0.1   # ~1.6 s per batch to stay under 40 RPM
 
