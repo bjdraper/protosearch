@@ -47,11 +47,11 @@ def iqtree(
     aligned_path:  str | Path,
     output_dir:    str | Path,
     prefix:        str,
-    model:         str  = "LG+G4",
-    bootstrap:     int  = 1000,
-    threads:       int  = 8,
-    asr:           bool = True,
-    iqtree_bin:    str  = "iqtree2",
+    model:         str       = "LG+G4",
+    bootstrap:     int       = 1000,
+    threads:       int | str = "AUTO",
+    asr:           bool      = True,
+    iqtree_bin:    str       = "iqtree2",
 ) -> dict[str, Path]:
     """
     Run IQ-TREE2 with optional ancestral state reconstruction.
@@ -115,9 +115,9 @@ def align_and_tree(
 def run_iqtree_asr(
     aligned_path: str | Path,
     output_dir:   str | Path,
-    model:        str = "LG+G4",
-    bootstrap:    int = 1000,
-    threads:      int = 4,
+    model:        str       = "LG+G4",
+    bootstrap:    int       = 1000,
+    threads:      int | str = "AUTO",
 ) -> dict[str, Path] | None:
     """IQ-TREE2 with ancestral state reconstruction. Returns dict of output paths, or None if skipped."""
     aligned_path = Path(aligned_path)
