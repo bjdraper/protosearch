@@ -61,13 +61,14 @@ def iqtree(
         iqtree_bin,
         "-s", str(aligned_path),
         "-m", model,
-        "-B", str(bootstrap),
         "-T", str(threads),
         "--redo",
         "--prefix", str(full_prefix),
     ]
     if asr:
         cmd.append("--ancestral")
+    else:
+        cmd += ["-B", str(bootstrap)]
 
     subprocess.run(cmd, check=True)
 
