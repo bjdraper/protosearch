@@ -28,24 +28,28 @@ def load_model(model_name: str = "esm2_t33_650M_UR50D",
 def _embed_nvidia(
     sequences:  list[tuple[str, str]],
     api_key:    str,
-    batch_size: int = 10,
+    batch_size: int = 32,
     rpm_limit:  int = 40,
 ) -> tuple[np.ndarray, list[str]]:
-    import requests, time
+    import requests, time, io
 
-    url     = "https://integrate.api.nvidia.com/v1/embeddings"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    url     = "https://health.api.nvidia.com/v1/biology/meta/esm2-650m"
+    headers = {
+        "Authorization":  f"Bearer {api_key}",
+        "Content-Type":   "application/json",
+        "Accept":         "application/octet-stream",
+    }
     sleep_s = 60.0 / rpm_limit + 0.1   # ~1.6 s per batch to stay under 40 RPM
 
     all_emb, all_ids = [], []
     for i in range(0, len(sequences), batch_size):
         batch   = sequences[i : i + batch_size]
-        payload = {"input": [seq for _, seq in batch], "model": "meta/esm2-650m"}
-        resp    = requests.post(url, json=payload, headers=headers, timeout=30)
+        payload = {"sequences": [seq for _, seq in batch], "format": "npz"}
+        resp    = requests.post(url, json=payload, headers=headers, timeout=60)
         resp.raise_for_status()
-        data    = resp.json()["data"]
-        data.sort(key=lambda x: x["index"])           # API may return out of order
-        all_emb.extend(np.array(d["embedding"], dtype=np.float32) for d in data)
+        npz     = np.load(io.BytesIO(resp.content))
+        batch_emb = npz["embeddings"].astype(np.float32)   # shape (batch, 1280)
+        all_emb.append(batch_emb)
         all_ids.extend(sid for sid, _ in batch)
         print(f"  embedded {min(i + batch_size, len(sequences))}/{len(sequences)}")
         if i + batch_size < len(sequences):
@@ -72,7 +76,7 @@ def embed_sequences(
         key = api_key or os.environ.get("NVIDIA_API_KEY", "")
         if not key:
             raise ValueError("backend='nvidia' requires api_key or NVIDIA_API_KEY env var")
-        return _embed_nvidia(sequences, key, batch_size=min(batch_size, 10))
+        return _embed_nvidia(sequences, key, batch_size=min(batch_size, 32))
 
     import torch
     device = get_device(device)
