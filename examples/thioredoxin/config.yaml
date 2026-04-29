@@ -1,0 +1,44 @@
+# ── Thioredoxin Demo — protosearch example ───────────────────────────────────
+# Copy-paste the values below into the notebook USER INPUT cells.
+# SURVEY_NAME (cell 03): thioredoxin_demo
+
+paths:
+  data_dir:    "data"
+  results_dir: "results"
+
+# ── Cell [04] ─────────────────────────────────────────────────────────────────
+reference_probes:
+  - { id: "TXN_HUMAN",   acc: "P10599", label: "TXN (human)",         colour: "#D94040" }
+  - { id: "TRXA_ECOLI",  acc: "P0AA25", label: "TrxA (E.coli)",       colour: "#1565C0" }
+  - { id: "TXN2_HUMAN",  acc: "Q99757", label: "TXN2 (human, mito)",  colour: "#E05C5C" }
+  - { id: "THIO1_YEAST", acc: "P22217", label: "TRX1 (yeast)",        colour: "#2E7D32" }
+
+pfam_ids:
+  - "PF00085"   # Thioredoxin domain
+
+length_filter:
+  min: 80
+  max: 180
+
+# ── Cell [17] — small-dataset override ────────────────────────────────────────
+# Change resolution=2.0  →  resolution=0.5
+# Reason: Leiden with high resolution fragments tiny datasets into singletons.
+clustering:
+  leiden_resolution: 0.5
+  k_neighbors: 10      # must be < N (number of HMMER hits)
+  pca_dims: 20
+
+# ── Cell [18] — small-dataset override ────────────────────────────────────────
+# Change perplexity=100  →  perplexity=8
+# Reason: openTSNE requires perplexity < N/3. With ~25 hits, max is ~8.
+tsne:
+  perplexity: 8
+
+embedding:
+  model:      "esm2_t33_650M_UR50D"
+  layer:      33
+  batch_size: 16   # smaller batch for small datasets
+
+tree:
+  aligner: "mafft"
+  model:   "LG+G4"
