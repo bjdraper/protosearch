@@ -32,3 +32,6 @@ py3Dmol           # Colab structure viewer (replaces PyMOL)
 
 # Config
 pyyaml
+
+# HTTP (NVIDIA NIM backend)
+requests
