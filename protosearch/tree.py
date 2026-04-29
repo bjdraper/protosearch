@@ -67,7 +67,7 @@ def iqtree(
         "--prefix", str(full_prefix),
     ]
     if asr:
-        cmd.append("-asr")
+        cmd.append("--ancestral")
 
     subprocess.run(cmd, check=True)
 
