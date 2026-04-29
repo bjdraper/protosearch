@@ -92,3 +92,9 @@ def fetch_uniprot_sequence(accession: str) -> tuple[str, str]:
     seq_id = lines[0][1:].split()[0]
     seq    = "".join(lines[1:])
     return seq_id, seq
+
+
+def fetch_uniprot_sequences(accessions: list[str], output_path: str | Path) -> None:
+    """Fetch multiple UniProt accessions and write them to a FASTA file."""
+    records = [fetch_uniprot_sequence(acc) for acc in accessions]
+    write_fasta(records, output_path)
