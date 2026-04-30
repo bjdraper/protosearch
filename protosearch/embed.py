@@ -28,8 +28,8 @@ def load_model(model_name: str = "esm2_t33_650M_UR50D",
 def _embed_nvidia(
     sequences:  list[tuple[str, str]],
     api_key:    str,
-    batch_size: int = 10,
-    rpm_limit:  int = 40,
+    batch_size: int = 32,
+    rpm_limit:  int = 120,
 ) -> tuple[np.ndarray, list[str]]:
     import requests, time, io
 
@@ -81,7 +81,7 @@ def embed_sequences(
     layer:      int  = 33,
     backend:    str  = "local",   # "local" | "nvidia"
     api_key:    str  = "",        # nvapi-... key; falls back to NVIDIA_API_KEY env var
-    rpm_limit:  int  = 40,        # NVIDIA NIM free-tier cap; ignored for local backend
+    rpm_limit:  int  = 120,       # controls inter-batch sleep; actual RPM stays ~15 at batch_size=32
 ) -> tuple[np.ndarray, list[str]]:
     """
     Embed protein sequences with ESM2 (local) or NVIDIA NIM API.
@@ -133,7 +133,7 @@ def embed_fasta(
     layer:      int = 33,
     backend:    str = "local",
     api_key:    str = "",
-    rpm_limit:  int = 40,
+    rpm_limit:  int = 120,
 ) -> tuple[np.ndarray, list[str]]:
     """Read a FASTA file, embed all sequences, and save embeddings + ids to disk."""
     from .utils import read_fasta
