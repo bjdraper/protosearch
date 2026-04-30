@@ -12,6 +12,8 @@ import matplotlib.patches as mpatches
 
 # ── t-SNE scatter ─────────────────────────────────────────────────────────────
 
+import re as _re
+
 _PALETTE = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
@@ -62,6 +64,67 @@ def plot_tsne(
 
     ax.legend(handles=handles, fontsize=7, framealpha=0.8, loc="upper left")
     ax.set_title(title, fontsize=11, fontweight="bold")
+    ax.set_xlabel("t-SNE 1"); ax.set_ylabel("t-SNE 2")
+    ax.set_xticks([]); ax.set_yticks([])
+    fig.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    return fig
+
+
+# ── Motif overlay ─────────────────────────────────────────────────────────────
+
+def plot_tsne_motif_overlay(
+    coords:     np.ndarray,
+    ids:        list[str],
+    fasta_path: "str | Path",
+    motifs:     dict,                          # {'name': {'pattern': str, 'colour': hex}}
+    save_path:  "Optional[str]" = None,
+    figsize:    tuple = (10, 8),
+) -> plt.Figure:
+    """
+    Overlay motif-positive sequences on a t-SNE as shaped markers.
+
+    Grey background scatter shows all sequences; coloured markers highlight those
+    carrying each catalytic motif.  One legend entry per motif.
+
+    motifs: {'HxxD': {'pattern': 'H.{2}D', 'colour': '#FF6B00'}, ...}
+    fasta_path: FASTA file whose sequences are matched against the motif patterns.
+    """
+    from .utils import read_fasta
+    seqs = dict(read_fasta(fasta_path))
+
+    id_to_idx = {seq_id: i for i, seq_id in enumerate(ids)}
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_facecolor("#F8F8F8")
+
+    # grey background: all sequences
+    ax.scatter(coords[:, 0], coords[:, 1], c="#CCCCCC", s=6, alpha=0.4,
+               linewidths=0, zorder=1, label="_nolegend_")
+
+    handles = []
+    for motif_name, spec in motifs.items():
+        pattern = _re.compile(spec['pattern'])
+        colour  = spec['colour']
+        match_idx = [
+            id_to_idx[sid]
+            for sid in ids
+            if sid in seqs and pattern.search(seqs[sid])
+        ]
+        if not match_idx:
+            continue
+        mx = np.array(match_idx)
+        ax.scatter(coords[mx, 0], coords[mx, 1],
+                   c=colour, s=40, alpha=0.85, linewidths=0.3,
+                   edgecolors='white', zorder=2)
+        handles.append(mpatches.Patch(color=colour, label=f"{motif_name} ({len(mx)})"))
+
+    ax.legend(handles=handles, fontsize=8, framealpha=0.9, loc="upper left",
+              title="Motif hits")
+    ax.set_title("t-SNE — catalytic motif overlay", fontsize=11, fontweight="bold")
     ax.set_xlabel("t-SNE 1"); ax.set_ylabel("t-SNE 2")
     ax.set_xticks([]); ax.set_yticks([])
     fig.tight_layout()
