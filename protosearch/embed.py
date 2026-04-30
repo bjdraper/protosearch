@@ -28,7 +28,7 @@ def load_model(model_name: str = "esm2_t33_650M_UR50D",
 def _embed_nvidia(
     sequences:  list[tuple[str, str]],
     api_key:    str,
-    batch_size: int = 32,
+    batch_size: int = 10,
     rpm_limit:  int = 40,
 ) -> tuple[np.ndarray, list[str]]:
     import requests, time, io
@@ -39,21 +39,36 @@ def _embed_nvidia(
         "Content-Type":   "application/json",
         "Accept":         "application/octet-stream",
     }
-    sleep_s = 60.0 / rpm_limit + 0.1   # ~1.6 s per batch to stay under 40 RPM
+    inter_batch_sleep = 60.0 / rpm_limit + 0.1   # stay safely under RPM cap
 
     all_emb, all_ids = [], []
     for i in range(0, len(sequences), batch_size):
         batch   = sequences[i : i + batch_size]
         payload = {"sequences": [seq for _, seq in batch], "format": "npz"}
-        resp    = requests.post(url, json=payload, headers=headers, timeout=60)
-        resp.raise_for_status()
-        npz     = np.load(io.BytesIO(resp.content))
+
+        # exponential backoff on 429 rate-limit responses
+        for attempt in range(5):
+            resp = requests.post(url, json=payload, headers=headers, timeout=120)
+            if resp.status_code == 429:
+                wait = 10 * (2 ** attempt)   # 10, 20, 40, 80, 160 s
+                print(f"  rate limited (429) — waiting {wait}s (attempt {attempt + 1}/5)")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            break
+        else:
+            raise RuntimeError(
+                f"NVIDIA NIM: batch {i // batch_size} failed after 5 retries (persistent 429)"
+            )
+
+        npz       = np.load(io.BytesIO(resp.content))
         batch_emb = npz["embeddings"].astype(np.float32)   # shape (batch, 1280)
         all_emb.append(batch_emb)
         all_ids.extend(sid for sid, _ in batch)
-        print(f"  embedded {min(i + batch_size, len(sequences))}/{len(sequences)}")
-        if i + batch_size < len(sequences):
-            time.sleep(sleep_s)
+        n_done = min(i + batch_size, len(sequences))
+        print(f"  embedded {n_done}/{len(sequences)}")
+        if n_done < len(sequences):
+            time.sleep(inter_batch_sleep)
 
     return np.vstack(all_emb), all_ids
 
@@ -66,6 +81,7 @@ def embed_sequences(
     layer:      int  = 33,
     backend:    str  = "local",   # "local" | "nvidia"
     api_key:    str  = "",        # nvapi-... key; falls back to NVIDIA_API_KEY env var
+    rpm_limit:  int  = 40,        # NVIDIA NIM free-tier cap; ignored for local backend
 ) -> tuple[np.ndarray, list[str]]:
     """
     Embed protein sequences with ESM2 (local) or NVIDIA NIM API.
@@ -76,7 +92,7 @@ def embed_sequences(
         key = api_key or os.environ.get("NVIDIA_API_KEY", "")
         if not key:
             raise ValueError("backend='nvidia' requires api_key or NVIDIA_API_KEY env var")
-        return _embed_nvidia(sequences, key, batch_size=min(batch_size, 32))
+        return _embed_nvidia(sequences, key, batch_size=batch_size, rpm_limit=rpm_limit)
 
     import torch
     device = get_device(device)
@@ -117,6 +133,7 @@ def embed_fasta(
     layer:      int = 33,
     backend:    str = "local",
     api_key:    str = "",
+    rpm_limit:  int = 40,
 ) -> tuple[np.ndarray, list[str]]:
     """Read a FASTA file, embed all sequences, and save embeddings + ids to disk."""
     from .utils import read_fasta
@@ -125,6 +142,7 @@ def embed_fasta(
     embeddings, ids = embed_sequences(
         sequences, model_name=model_name, batch_size=batch_size,
         device=device, layer=layer, backend=backend, api_key=api_key,
+        rpm_limit=rpm_limit,
     )
     save_embeddings(embeddings, ids, emb_path, ids_path)
     return embeddings, ids
